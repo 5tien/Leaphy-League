@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+__pycache__/

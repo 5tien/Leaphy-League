@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Upload automatisch (C3 controller / S3 receiver)",
+            "type": "process",
+            "command": "${env:USERPROFILE}\\.platformio\\penv\\Scripts\\python.exe",
+            "args": ["${workspaceFolder}\\scripts\\upload_auto.py"],
+            "problemMatcher": []
+        }
+    ]
+}

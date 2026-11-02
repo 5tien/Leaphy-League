@@ -5,5 +5,5 @@
 .vscode/ipch
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
-/graft/
+graft/
 __pycache__/

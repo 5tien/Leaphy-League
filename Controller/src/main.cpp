@@ -12,8 +12,8 @@
 #error ROLE_MOTORS hoort bij ROLE_RECEIVER.
 #endif
 
-constexpr uint8_t broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-constexpr uint16_t magic = 0x4C4C;
+constexpr uint8_t broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00};
+constexpr uint16_t magic = 0x4C4A;
 constexpr uint8_t protocolVersion = 3;  // Bitindeling gewijzigd: upload beide ESP's.
 constexpr uint8_t inputType = 1;
 constexpr uint8_t ackType = 2;
@@ -76,6 +76,13 @@ int normalizeAxis(int raw, int center) {
 uint16_t encodeAxis(int normalized) {
     return static_cast<uint16_t>(2048 + constrain(normalized, -255, 255) * 8);
 }
+#else
+#ifdef ROLE_MOTORS
+constexpr uint8_t extraOutputPin = D5; // ESP32-S3 Nano
+#else
+constexpr uint8_t extraOutputPin = 5;  // ESP32-C3 ontvanger: GPIO5
+#endif
+constexpr uint32_t extraOutputDurationMs = 200;
 #endif
 
 #ifdef ROLE_MOTORS
@@ -224,6 +231,9 @@ void setup() {
     Serial.println("Laat joystick los tijdens kalibratie...");
     calibrateJoystick();
     Serial.println("Houd beide knoppen 2 seconden ingedrukt om opnieuw te kalibreren.");
+#else
+    digitalWrite(extraOutputPin, LOW);
+    pinMode(extraOutputPin, OUTPUT);
 #endif
 
     inbox = xQueueCreate(1, sizeof(Message));
@@ -309,6 +319,8 @@ void controllerLoop(uint32_t now) {
 }
 #else
 void receiverLoop(uint32_t now) {
+    static bool extraOutputActive = false;
+    static uint32_t extraOutputStartedAt = 0;
     Message inputs;
     if (xQueueReceive(inbox, &inputs, 0) == pdTRUE && inputs.type == inputType) {
         lastReceived = now;
@@ -317,6 +329,9 @@ void receiverLoop(uint32_t now) {
         driveFromJoystick(inputs);
 #endif
         if (inputs.buttons & extraPulseBit) {
+            digitalWrite(extraOutputPin, HIGH);
+            extraOutputActive = true;
+            extraOutputStartedAt = now;
             static uint32_t extraPulseCount = 0;
             Serial.printf("Extra knop: puls ontvangen #%lu\n",
                           static_cast<unsigned long>(++extraPulseCount));
@@ -337,6 +352,11 @@ void receiverLoop(uint32_t now) {
         Message reply = {magic, protocolVersion, ackType, inputs.sequence, 0, 0, 0};
         esp_now_send(broadcast,
                      reinterpret_cast<const uint8_t*>(&reply), sizeof(reply));
+    }
+
+    if (extraOutputActive && now - extraOutputStartedAt >= extraOutputDurationMs) {
+        digitalWrite(extraOutputPin, LOW);
+        extraOutputActive = false;
     }
 
     static uint32_t lastWaitingPrint = 0;

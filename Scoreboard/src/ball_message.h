@@ -3,13 +3,13 @@
 #include <stdint.h>
 
 constexpr uint16_t ballMagic = 0xB411;
-constexpr uint8_t ballVersion = 1;
+constexpr uint8_t ballVersion = 2;
 constexpr uint8_t radioChannel = 6;
 
 struct BallMessage {
     uint16_t magic;
     uint8_t version;
-    uint8_t reserved;
+    uint8_t goalId; // 1 = linker twee cijfers, 2 = rechter twee cijfers
     uint32_t bootId;
     uint32_t count;
 };

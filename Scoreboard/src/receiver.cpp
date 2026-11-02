@@ -8,7 +8,6 @@
 // 5461BS-1 common-anode display. Elk segment heeft een eigen 330-ohm weerstand.
 constexpr uint8_t segmentPins[] = {0, 1, 2, 3, 4, 5, 6, 7};
 constexpr uint8_t digitPins[] = {9, 10, 20, 21};
-constexpr uint16_t digitDivisors[] = {1000, 100, 10, 1};
 constexpr uint8_t digitSegments[10][8] = {
     {1, 1, 1, 1, 1, 1, 0, 0},
     {0, 1, 1, 0, 0, 0, 0, 0},
@@ -21,28 +20,31 @@ constexpr uint8_t digitSegments[10][8] = {
     {1, 1, 1, 1, 1, 1, 1, 0},
     {1, 1, 1, 1, 0, 1, 1, 0},
 };
-uint16_t displayValue = 0;
+uint8_t goalScores[2] = {0, 0};
 bool displayEnabled = true;
 constexpr uint32_t scoreCooldownMs = 5000;
-uint32_t lastScoreAt = 0;
-bool hasScored = false;
+uint32_t lastScoreAt[2] = {0, 0};
+bool hasScored[2] = {false, false};
 
-void incrementScore() {
+void incrementScore(uint8_t goalId) {
+    if (goalId < 1 || goalId > 2) return;
+    const uint8_t index = goalId - 1;
     const uint32_t now = millis();
-    if (hasScored && now - lastScoreAt < scoreCooldownMs) {
-        Serial.println("Bal genegeerd: wacht 5 seconden");
+    if (hasScored[index] && now - lastScoreAt[index] < scoreCooldownMs) {
+        Serial.printf("Doel %u: bal genegeerd, wacht 5 seconden\n", goalId);
         return;
     }
-    lastScoreAt = now;
-    hasScored = true;
-    displayValue = (displayValue + 1) % 10000;
-    Serial.printf("Score: %u\n", static_cast<unsigned>(displayValue));
+    lastScoreAt[index] = now;
+    hasScored[index] = true;
+    goalScores[index] = (goalScores[index] + 1) % 100;
+    Serial.printf("Score: %02u-%02u\n", goalScores[0], goalScores[1]);
 }
 
 void displayOneDigit(uint8_t position) {
     for (uint8_t pin : digitPins) digitalWrite(pin, HIGH);
 
-    const uint8_t value = (displayValue / digitDivisors[position]) % 10;
+    const uint8_t score = goalScores[position / 2];
+    const uint8_t value = position % 2 == 0 ? score / 10 : score % 10;
     for (uint8_t segment = 0; segment < 8; ++segment) {
         digitalWrite(segmentPins[segment], digitSegments[value][segment] ? LOW : HIGH);
     }
@@ -85,6 +87,7 @@ void onReceive(const uint8_t*, const uint8_t* data, int length) {
         ++wrongVersionSeen;
         return;
     }
+    if (message.goalId < 1 || message.goalId > 2) return;
     ++validPacketsSeen;
     xQueueSend(messages, &message, 0);
 }
@@ -131,7 +134,7 @@ void setup() {
     Serial.printf("Radio ontvanger: kanaal %u, MAC %s\n", channel,
                   WiFi.macAddress().c_str());
     Serial.println("Wacht op balpassage...");
-    Serial.println("Displaytest: typ + in de seriele monitor");
+    Serial.println("Displaytest: typ 1 of 2 in de seriele monitor");
 }
 
 void loop() {
@@ -152,7 +155,7 @@ void loop() {
     }
     while (Serial.available()) {
         const char command = Serial.read();
-        if (command == '+') incrementScore();
+        if (command == '1' || command == '2') incrementScore(command - '0');
         if (command == 'd') {
             displayEnabled = !displayEnabled;
             for (uint8_t pin : digitPins) digitalWrite(pin, HIGH);
@@ -160,17 +163,18 @@ void loop() {
             Serial.printf("Display %s\n", displayEnabled ? "aan" : "uit");
         }
     }
-    static uint32_t previousBootId = 0;
-    static uint32_t previousCount = 0;
-    static bool receivedAny = false;
+    static uint32_t previousBootId[2] = {0, 0};
+    static uint32_t previousCount[2] = {0, 0};
+    static bool receivedAny[2] = {false, false};
     BallMessage message;
     while (messages && xQueueReceive(messages, &message, 0) == pdTRUE) {
-        if (!receivedAny || message.bootId != previousBootId ||
-            message.count > previousCount) {
-            receivedAny = true;
-            previousBootId = message.bootId;
-            previousCount = message.count;
-            incrementScore();
+        const uint8_t index = message.goalId - 1;
+        if (!receivedAny[index] || message.bootId != previousBootId[index] ||
+            message.count > previousCount[index]) {
+            receivedAny[index] = true;
+            previousBootId[index] = message.bootId;
+            previousCount[index] = message.count;
+            incrementScore(message.goalId);
         }
     }
 

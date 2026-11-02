@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/stenb/Documents/School/Game-On/Leaphy-League - Scoreboard/include",
-                "C:/Users/stenb/Documents/School/Game-On/Leaphy-League - Scoreboard/src",
+                "C:/Users/stenb/Documents/School/Game-On/Leaphy-League/Scoreboard/include",
+                "C:/Users/stenb/Documents/School/Game-On/Leaphy-League/Scoreboard/src",
                 "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32c3/include/newlib/platform_include",
                 "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32c3/include/freertos/include",
@@ -241,8 +241,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/stenb/Documents/School/Game-On/Leaphy-League - Scoreboard/include",
-                    "C:/Users/stenb/Documents/School/Game-On/Leaphy-League - Scoreboard/src",
+                    "C:/Users/stenb/Documents/School/Game-On/Leaphy-League/Scoreboard/include",
+                    "C:/Users/stenb/Documents/School/Game-On/Leaphy-League/Scoreboard/src",
                     "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32c3/include/newlib/platform_include",
                     "C:/Users/stenb/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32c3/include/freertos/include",

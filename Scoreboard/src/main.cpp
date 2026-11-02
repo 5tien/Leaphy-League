@@ -5,6 +5,11 @@
 #include <esp_arduino_version.h>
 #include "ball_message.h"
 
+#ifndef GOAL_ID
+#error Kies GOAL_ID=1 of GOAL_ID=2 in platformio.ini.
+#endif
+static_assert(GOAL_ID == 1 || GOAL_ID == 2, "Ongeldig doelnummer");
+
 constexpr uint8_t irEmitterPin = 3;
 constexpr uint8_t irReceiverPin = 4;
 // Wi-Fi STA MAC van de scoreboard-SuperMini op COM5.
@@ -91,10 +96,10 @@ bool startRadio() {
 }
 
 void sendBall() {
-    BallMessage message = {ballMagic, ballVersion, 0, bootId, ballCount};
+    BallMessage message = {ballMagic, ballVersion, GOAL_ID, bootId, ballCount};
     const esp_err_t result = esp_now_send(
         receiverAddress, reinterpret_cast<const uint8_t*>(&message), sizeof(message));
-    Serial.printf("Verstuur bal %lu: %s\n",
+    Serial.printf("Doel %d, verstuur bal %lu: %s\n", GOAL_ID,
                   static_cast<unsigned long>(ballCount),
                   result == ESP_OK ? "verzendopdracht geaccepteerd" : "fout");
 }
@@ -103,7 +108,8 @@ void registerBall() {
     ++ballCount;
     sendsRemaining = 3;
     lastSendAt = 0;
-    Serial.printf("Bal %lu gedetecteerd\n", static_cast<unsigned long>(ballCount));
+    Serial.printf("Doel %d, bal %lu gedetecteerd\n", GOAL_ID,
+                  static_cast<unsigned long>(ballCount));
 }
 
 void setup() {
